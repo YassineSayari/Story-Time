@@ -19,7 +19,7 @@ class StoryPage extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                DALLEImage(imageUrl: imageUrl),
+                storyImage(imageUrl: imageUrl),
                 SizedBox(height: 16),
                 // Text from the story
                 Text(
@@ -38,10 +38,10 @@ class StoryPage extends StatelessWidget {
   }
 }
 
-class DALLEImage extends StatelessWidget {
+class storyImage extends StatelessWidget {
   final String imageUrl;
 
-  const DALLEImage({Key? key, required this.imageUrl}) : super(key: key);
+  const storyImage({Key? key, required this.imageUrl}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

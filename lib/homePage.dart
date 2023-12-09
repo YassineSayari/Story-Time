@@ -1,17 +1,17 @@
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'storyPage.dart';
 import 'main.dart';
 import 'savedStories.dart';
 import 'profil.dart';
-import 'package:storytime/User.dart';
-import 'databasehelper.dart';
 
 class homePage extends StatefulWidget {
   const homePage({Key? key, required this.controller,required this.userEmail}) : super(key: key);
   final PageController controller;
   final String userEmail;
+
 
   @override
   State<homePage> createState() => homePageState();
@@ -24,11 +24,14 @@ class homePageState extends State<homePage> {
   String generatedImageUrl = '';
 
   List<SavedStory> savedStories = [];
+  List<String> imageCarouselUrls = ['assets/images/layla.jpeg','assets/images/boy.jpeg',
+                                    'assets/images/lamb.jpeg','assets/images/hboy.jpeg',
+                                    'assets/images/cat.jpeg',];
 
 
   Future<void> generateStory(String topic) async {
     print('Generating story...');
-    final apiKey = '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';
+    final apiKey = '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';
     final textEndpoint = 'https://api.openai.com/v1/engines/text-davinci-003/completions';
     final unsplashEndpoint = 'https://api.unsplash.com/photos/random';
     final unsplashAccessKey = 'hYIAb65E5FOFs_t2SyLqm6YBgd2vGXfv9hUfD_dujzI'; // Replace with your Unsplash Access Key
@@ -76,13 +79,28 @@ class homePageState extends State<homePage> {
         );
       } else {
         print('Error generating image: ${unsplashResponse.reasonPhrase}');
-        // Handle error appropriately
+
       }
     } else {
       print('Error generating story: ${textResponse.reasonPhrase}');
-      // Handle error appropriately
+
     }
   }
+
+  Widget listeDesImages() {
+    return SizedBox(
+      height: 500,
+      child: PageView.builder(
+        itemCount: imageCarouselUrls.length,
+        itemBuilder: (context, index) {
+          return MyImage(imageUrl: imageCarouselUrls[index]);
+        },
+      ),
+    );
+  }
+
+
+
 
 
   bool valide = false;
@@ -123,11 +141,14 @@ class homePageState extends State<homePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => Profile(userEmail:widget.userEmail), // Create UserProfilePage class
+                  builder: (context) => Profile(
+                    userEmail: widget.userEmail,
+                  ),
                 ),
               );
             },
           ),
+
           IconButton(
             icon: Icon(Icons.menu),
             onPressed: () {
@@ -147,9 +168,9 @@ class homePageState extends State<homePage> {
         child: Form(
           key: _formKey,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              SizedBox(height: 10),
+              SizedBox(height: 100),
               TextFormField(
                 controller: topic,
                 decoration: const InputDecoration(
@@ -208,6 +229,8 @@ class homePageState extends State<homePage> {
                   ),
                 ),
               ),
+              SizedBox(height: 20),
+              listeDesImages(),
             ],
           ),
         ),
@@ -215,3 +238,24 @@ class homePageState extends State<homePage> {
     );
   }
 }
+
+class MyImage extends StatelessWidget {
+  final String imageUrl;
+
+  const MyImage({Key? key, required this.imageUrl}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(15),
+      child: Image.asset(
+        imageUrl,
+        width: 150,
+        height: 300,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+}
+
+

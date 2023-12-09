@@ -67,7 +67,7 @@ class SubscribeState extends State<Subscribe> {
                           keyboardType: TextInputType.text,
 
                           style: TextStyle(
-                            color: Color(0xFFFFFFFF),
+                            color: Color(0xFF000000),
                             fontSize: 27,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w500,
@@ -110,7 +110,7 @@ class SubscribeState extends State<Subscribe> {
                           keyboardType: TextInputType.text,
 
                           style: TextStyle(
-                            color: Color(0xFFFFFFFF),
+                            color: Color(0xFF000000),
                             fontSize: 27,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w500,
@@ -153,7 +153,7 @@ class SubscribeState extends State<Subscribe> {
                           keyboardType: TextInputType.text,
 
                           style: TextStyle(
-                            color: Color(0xFFFFFFFF),
+                            color: Color(0xFF000000),
                             fontSize: 27,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w500,

@@ -76,4 +76,17 @@ class DatabaseHelper {
 
     return User.fromMap(maps.first);
   }
+
+  Future<void> updateUser(User user) async {
+    Database db = await instance.database;
+    await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+  }
+
+
+
 }

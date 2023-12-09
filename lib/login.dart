@@ -58,7 +58,7 @@ class LoginState extends State<Login> {
                           keyboardType: TextInputType.text,
 
                           style: TextStyle(
-                            color: Color(0xFFFFFFFF),
+                            color: Color(0xFF000000),
                             fontSize: 27,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w500,
@@ -103,7 +103,7 @@ class LoginState extends State<Login> {
                           keyboardType: TextInputType.text,
                           obscureText: true,
                           style: TextStyle(
-                            color: Color(0xFF7743DB),
+                            color: Color(0xFF000000),
                             fontSize: 27,
                             fontFamily: 'Poppins',
                             fontWeight: FontWeight.w500,

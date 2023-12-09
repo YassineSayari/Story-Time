@@ -17,7 +17,7 @@ class Story extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Display the full story
+
             Text('$topic:\n',style:TextStyle(
               fontSize: 29,
               fontWeight: FontWeight.bold,
