@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'homePage.dart';
 import 'subscribe.dart';
-import 'databasehelper.dart';
-import 'package:storytime/User.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'authentication_helper.dart';
+
 
 class Login extends StatefulWidget {
   const Login({Key? key, required this.controller}) : super(key: key);
@@ -17,17 +18,54 @@ class LoginState extends State<Login> {
   final TextEditingController mail = TextEditingController();
   final TextEditingController password = TextEditingController();
 
+
+  Future<UserCredential?> signInWithGoogle() async {
+    UserCredential? userCredential = await AuthenticationHelper.signInWithGoogle();
+
+    if (userCredential != null) {
+      String userEmail = userCredential.user?.email ?? "";
+      print("signed Up with email: $userEmail");
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => homePage(controller: widget.controller, userEmail: userEmail),
+          ),
+        );
+      }
+
+  }
+
+
   bool log = false;
   bool mdp = false;
   String email= " ";
 
   void verifier() async{
-    User? u = await DatabaseHelper.instance.getUserByEmailAndPassword(mail.text, password.text);
-    if (u!=null) {
-      log = true;
-      mdp = true;
+    try {
+      UserCredential userCredential =
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: mail.text,
+        password: password.text,
+      );
 
-      email=u.email;
+      if (userCredential.user != null) {
+        email = userCredential.user!.email!;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => homePage(controller: widget.controller, userEmail: email),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        print('No user found for that email.');
+      } else if (e.code == 'wrong-password') {
+        print('Wrong password provided for that user.');
+      } else {
+        print('Error: ${e.message}');
+      }
     }
 
   }
@@ -170,6 +208,36 @@ class LoginState extends State<Login> {
                             ),
                           ),
                         ),
+                        SizedBox(height: 10),
+                        SizedBox(
+                          width: 400, // Set the desired width
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              UserCredential? userCredential = await signInWithGoogle();
+
+                              if (userCredential != null) {
+                                String userEmail = userCredential.user?.email ?? "";
+                                print("signed Up with email: $userEmail");
+
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              primary: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/images/google_sign_in.png',
+                                  height: 60,
+                                  width: 264,
+                                ),
+                                SizedBox(width: 16),
+                              ],
+                            ),
+                          ),
+                        ),
 
                      SizedBox(
                       height: 15,
@@ -180,7 +248,7 @@ class LoginState extends State<Login> {
                           'Don’t have an account? ',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 23,
+                            fontSize: 20,
                             fontFamily: 'Poppins',
 
                           ),
@@ -196,7 +264,7 @@ class LoginState extends State<Login> {
                             'Subscribe !',
                             style: TextStyle(
                               color: Colors.deepPurple,
-                              fontSize: 23,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Poppins',
                             ),

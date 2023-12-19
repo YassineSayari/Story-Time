@@ -1,17 +1,19 @@
-import 'dart:convert';
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'login.dart';
 import 'storyPage.dart';
 import 'main.dart';
 import 'savedStories.dart';
 import 'profil.dart';
 
 class homePage extends StatefulWidget {
-  const homePage({Key? key, required this.controller,required this.userEmail}) : super(key: key);
+  const homePage({Key? key, required this.controller, required this.userEmail}) : super(key: key);
   final PageController controller;
   final String userEmail;
-
 
   @override
   State<homePage> createState() => homePageState();
@@ -24,92 +26,48 @@ class homePageState extends State<homePage> {
   String generatedImageUrl = '';
 
   List<SavedStory> savedStories = [];
-  List<String> imageCarouselUrls = ['assets/images/layla.jpeg','assets/images/boy.jpeg',
-                                    'assets/images/lamb.jpeg','assets/images/hboy.jpeg',
-                                    'assets/images/cat.jpeg',];
 
+  List<String> imageCarouselUrls = [
+    'assets/images/layla.jpeg',
+    'assets/images/boy.jpeg',
+    'assets/images/parent.jpeg',
+    'assets/images/lamb.jpeg',
+    'assets/images/parent2.jpeg',
+    'assets/images/hboy.jpeg',
+    'assets/images/cat.jpeg',
+    'assets/images/parent3.jpeg',
+  ];
+
+  int currentPage = 0;
+  late Timer timer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    timer = Timer.periodic(Duration(seconds: 3), (timer) {
+      if (currentPage < imageCarouselUrls.length - 1) {
+        currentPage++;
+      } else {
+        currentPage = 0;
+      }
+      widget.controller.animateToPage(
+        currentPage,
+        duration: Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    timer.cancel();
+    super.dispose();
+  }
 
   Future<void> generateStory(String topic) async {
-    print('Generating story...');
-    final apiKey = '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';
-    final textEndpoint = 'https://api.openai.com/v1/engines/text-davinci-003/completions';
-    final unsplashEndpoint = 'https://api.unsplash.com/photos/random';
-    final unsplashAccessKey = 'hYIAb65E5FOFs_t2SyLqm6YBgd2vGXfv9hUfD_dujzI'; // Replace with your Unsplash Access Key
-
-    final prompt = 'Generate a short story for children about $topic.';
-
-
-    final textResponse = await http.post(
-      Uri.parse(textEndpoint),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      },
-      body: jsonEncode({
-        'prompt': prompt,
-        'max_tokens': 200,
-      }),
-    );
-
-    if (textResponse.statusCode == 200) {
-      final textData = jsonDecode(textResponse.body);
-      setState(() {
-        generatedStory = textData['choices'][0]['text'];
-      });
-
-      saveStory(topic, generatedStory);
-
-      final unsplashResponse = await http.get(
-        Uri.parse('$unsplashEndpoint?query=$topic as a cartoon character'),
-        headers: {'Authorization': 'Client-ID $unsplashAccessKey'},
-      );
-
-      if (unsplashResponse.statusCode == 200) {
-        final unsplashData = jsonDecode(unsplashResponse.body);
-        setState(() {
-          generatedImageUrl = unsplashData['urls']['regular'];
-        });
-
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StoryPage(story: generatedStory, imageUrl: generatedImageUrl),
-          ),
-        );
-      } else {
-        print('Error generating image: ${unsplashResponse.reasonPhrase}');
-
-      }
-    } else {
-      print('Error generating story: ${textResponse.reasonPhrase}');
-
-    }
+    // ... (your existing code)
   }
-
-  Widget listeDesImages() {
-    return SizedBox(
-      height: 500,
-      child: PageView.builder(
-        itemCount: imageCarouselUrls.length,
-        itemBuilder: (context, index) {
-          return MyImage(imageUrl: imageCarouselUrls[index]);
-        },
-      ),
-    );
-  }
-
-
-
-
-
-  bool valide = false;
-  void verifier() {
-    if (topic.text.isEmpty) {
-      valide = true;
-    }
-  }
-
 
   void saveStory(String topic, String generatedStory) {
     setState(() {
@@ -121,34 +79,41 @@ class homePageState extends State<homePage> {
     });
   }
 
+  Widget listeDesImages() {
+    return Expanded(
+      child: SingleChildScrollView(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: PageView.builder(
+            controller: widget.controller,
+            itemCount: imageCarouselUrls.length,
+            itemBuilder: (context, index) {
+              return MyImage(imageUrl: imageCarouselUrls[index]);
+            },
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Home Page',style:TextStyle(fontSize: 30),),
-        centerTitle: true,
+        automaticallyImplyLeading: false,
+        title: Text(
+          'Story Time',
+          style: TextStyle(fontSize: 30),
+        ),
+        centerTitle: false,
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
-            onPressed: () {
-              // Handle home item click
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login(controller: widget.controller)));
             },
           ),
-          IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Profile(
-                    userEmail: widget.userEmail,
-                  ),
-                ),
-              );
-            },
-          ),
-
           IconButton(
             icon: Icon(Icons.menu),
             onPressed: () {
@@ -160,7 +125,6 @@ class homePageState extends State<homePage> {
               );
             },
           ),
-
         ],
       ),
       body: Padding(
@@ -170,7 +134,7 @@ class homePageState extends State<homePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              SizedBox(height: 100),
+              SizedBox(height: 30),
               TextFormField(
                 controller: topic,
                 decoration: const InputDecoration(
@@ -235,6 +199,45 @@ class homePageState extends State<homePage> {
           ),
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: 'My Stories',
+          ),
+        ],
+        currentIndex: 0,
+        selectedItemColor: Colors.amber[800],
+        onTap: (index) {
+          switch (index) {
+            case 0:
+            // Handle home tab click
+              break;
+            case 1:
+            // Navigate to Profile page
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                      builder: (context) => Profile(userEmail: widget.userEmail),
+          ),
+
+              );
+              break;
+            case 2:
+            // Handle My Stories tab click
+              break;
+          }
+               },
+      ),
     );
   }
 }
@@ -251,11 +254,9 @@ class MyImage extends StatelessWidget {
       child: Image.asset(
         imageUrl,
         width: 150,
-        height: 300,
+        height: 350,
         fit: BoxFit.cover,
       ),
     );
   }
 }
-
-

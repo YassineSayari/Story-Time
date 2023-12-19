@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'authentication_helper.dart';
 import 'login.dart';
-import 'User.dart';
 import 'databasehelper.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'homePage.dart';
 
 class Subscribe extends StatefulWidget {
   const Subscribe({Key? key, required this.controller}) : super(key: key);
@@ -22,22 +25,59 @@ class SubscribeState extends State<Subscribe> {
   final DatabaseHelper databaseHelper = DatabaseHelper.instance;
 
 
+  Future<UserCredential?> signInWithGoogle() async {
+    UserCredential? userCredential = await AuthenticationHelper.signInWithGoogle();
+
+    if (userCredential != null) {
+      String userEmail = userCredential.user?.email ?? "";
+      print("signed Up with email: $userEmail");
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => homePage(controller: widget.controller, userEmail: userEmail),
+        ),
+      );
+    }
+  }
+
+
+
+
   bool log = false;
   bool mdp = false;
 
-  void verifier() {
-
-    if (mail.text.contains("@") && password.text == passwordconf.text) {
-      log = true;
-      mdp = true;
-
-      User u = User(
-        firstName: prenom.text,
-        lastName: nom.text,
+  void verifier() async {
+    try {
+      UserCredential userCredential =
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: mail.text,
         password: password.text,
       );
-      databaseHelper.insertUser(u);
+
+      if (userCredential.user != null && password.text == passwordconf.text) {
+        log = true;
+        mdp = true;
+
+        await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+          'email': mail.text,
+          'firstName': prenom.text,
+          'lastName': nom.text,
+          'password':password.text,
+        });
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Login(controller: widget.controller)),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      // Handle registration errors
+      if (e.code == 'email-already-in-use') {
+        print('The account already exists for that email.');
+      } else {
+        print('Error: ${e.message}');
+      }
     }
   }
 
@@ -309,15 +349,43 @@ class SubscribeState extends State<Subscribe> {
                         SizedBox(
                           height: 15,
                         ),
+                        SizedBox(
+                          width: 400, // Set the desired width
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              UserCredential? userCredential = await signInWithGoogle();
 
+                              if (userCredential != null) {
+                                String userEmail = userCredential.user?.email ?? "";
+                                print("signed Up with email: $userEmail");
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              primary: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/images/google_sign_in.png',
+                                  height: 60,
+                                  width: 264,
+                                ),
+                                SizedBox(width: 16),
+                              ],
+                            ),
+                          ),
+                        ),
 
+                        SizedBox(height: 8),
                         Row(
                           children: [
                             const Text(
                               'Already have an account? ',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 23,
+                                fontSize: 20,
                                 fontFamily: 'Poppins',
 
                               ),
@@ -333,7 +401,7 @@ class SubscribeState extends State<Subscribe> {
                                 'Login !',
                                 style: TextStyle(
                                   color: Colors.deepPurple,
-                                  fontSize: 23,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   fontFamily: 'Poppins',
                                 ),

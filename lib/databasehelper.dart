@@ -1,92 +1,66 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:storytime/User.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
-  static Database? _database;
 
   DatabaseHelper._privateConstructor();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
-  }
-
-  Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'user_database.db');
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDatabase,
-    );
-  }
-
-  Future<void> _createDatabase(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE users(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        firstName TEXT,
-        lastName TEXT,
-        email TEXT,
-        password TEXT
-      )
-    ''');
-  }
-
-  Future<int> insertUser(User user) async {
-    Database db = await instance.database;
-    return await db.insert('users', user.toMap());
+  Future<void> insertUser(User user) async {
+    await FirebaseFirestore.instance.collection('users').add(user.toMap());
   }
 
   Future<List<User>> getAllUsers() async {
-    Database db = await instance.database;
-    List<Map<String, dynamic>> maps = await db.query('users');
-    return List.generate(maps.length, (index) => User.fromMap(maps[index]));
+    QuerySnapshot querySnapshot =
+    await FirebaseFirestore.instance.collection('users').get();
+
+    return querySnapshot.docs
+        .map((DocumentSnapshot document) =>
+        User.fromMap(document.data() as Map<String, dynamic>?, document.id))
+        .toList();
   }
+
+  DatabaseHelper();
 
   Future<User?> getUserByEmail(String email) async {
-    Database db = await instance.database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'email = ?',
-      whereArgs: [email],
-    );
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .get();
 
-    if (maps.isEmpty) {
+    if (querySnapshot.docs.isEmpty) {
       return null;
     }
 
-    return User.fromMap(maps.first);
+    return User.fromMap(
+      querySnapshot.docs.first.data() as Map<String, dynamic>?,
+      querySnapshot.docs.first.id,
+    );
   }
 
+  Future<User?> getUserByEmailAndPassword(
+      String email, String password) async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .where('password', isEqualTo: password)
+        .get();
 
-  Future<User?> getUserByEmailAndPassword(String email, String password) async {
-    Database db = await instance.database;
-    List<Map<String, dynamic>> maps = await db.query(
-      'users',
-      where: 'email = ? AND password = ?',
-      whereArgs: [email, password],
-    );
-
-    if (maps.isEmpty) {
+    if (querySnapshot.docs.isEmpty) {
       return null;
     }
 
-    return User.fromMap(maps.first);
+    return User.fromMap(
+      querySnapshot.docs.first.data() as Map<String, dynamic>?,
+      querySnapshot.docs.first.id,
+    );
   }
+
 
   Future<void> updateUser(User user) async {
-    Database db = await instance.database;
-    await db.update(
-      'users',
-      user.toMap(),
-      where: 'id = ?',
-      whereArgs: [user.id],
-    );
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.id)
+        .update(user.toMap());
   }
-
-
-
 }
