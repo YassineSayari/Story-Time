@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'login.dart';
 import 'storyPage.dart';
 import 'main.dart';
 import 'savedStories.dart';
@@ -24,6 +27,7 @@ class homePageState extends State<homePage> {
   String generatedImageUrl = '';
 
   List<SavedStory> savedStories = [];
+
   List<String> imageCarouselUrls = [
     'assets/images/layla.jpeg',
     'assets/images/boy.jpeg',
@@ -58,19 +62,18 @@ class homePageState extends State<homePage> {
 
   @override
   void dispose() {
-    // Cancel the timer when the widget is disposed
     timer.cancel();
     super.dispose();
   }
 
   Future<void> generateStory(String topic) async {
     print('Generating story...');
-    final apiKey = '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';
+    final apiKey = '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';
     final textEndpoint = 'https://api.openai.com/v1/engines/text-davinci-003/completions';
     final unsplashEndpoint = 'https://api.unsplash.com/photos/random';
     final unsplashAccessKey = 'hYIAb65E5FOFs_t2SyLqm6YBgd2vGXfv9hUfD_dujzI';
 
-    final prompt = 'Generate a short story for children about $topic.';
+    final prompt = 'Generate a short story for children about $topic.Make it 4 short paragraphs and Provide a happy ending';
 
 
     final textResponse = await http.post(
@@ -81,7 +84,7 @@ class homePageState extends State<homePage> {
       },
       body: jsonEncode({
         'prompt': prompt,
-        'max_tokens': 200,
+        'max_tokens': 300,
       }),
     );
 
@@ -94,7 +97,7 @@ class homePageState extends State<homePage> {
       saveStory(topic, generatedStory);
 
       final unsplashResponse = await http.get(
-        Uri.parse('$unsplashEndpoint?query=$topic as a cartoon character'),
+        Uri.parse('$unsplashEndpoint?query=$topic as a child firenly image'),
         headers: {'Authorization': 'Client-ID $unsplashAccessKey'},
       );
 
@@ -132,47 +135,38 @@ class homePageState extends State<homePage> {
   }
 
   Widget listeDesImages() {
-    return SizedBox(
-      height: 500,
-      child: PageView.builder(
-        controller: widget.controller,
-        itemCount: imageCarouselUrls.length,
-        itemBuilder: (context, index) {
-          return MyImage(imageUrl: imageCarouselUrls[index]);
-        },
+    return Expanded(
+      child: SingleChildScrollView(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: PageView.builder(
+            controller: widget.controller,
+            itemCount: imageCarouselUrls.length,
+            itemBuilder: (context, index) {
+              return MyImage(imageUrl: imageCarouselUrls[index]);
+            },
+          ),
+        ),
       ),
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
-          'Home Page',
+          'Story Time',
           style: TextStyle(fontSize: 30),
         ),
-        centerTitle: true,
+        centerTitle: false,
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
-            onPressed: () {
-              // Handle home item click
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => Profile(
-                    userEmail: widget.userEmail,
-                  ),
-                ),
-              );
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => Login(controller: widget.controller)));
             },
           ),
           IconButton(
@@ -195,7 +189,7 @@ class homePageState extends State<homePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              SizedBox(height: 100),
+              SizedBox(height: 30),
               TextFormField(
                 controller: topic,
                 decoration: const InputDecoration(
@@ -239,6 +233,7 @@ class homePageState extends State<homePage> {
                   onPressed: () {
                     print("button pressed");
                     generateStory(topic.text);
+
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF9F7BFF),
@@ -260,6 +255,49 @@ class homePageState extends State<homePage> {
           ),
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.menu),
+            label: 'My Stories',
+          ),
+        ],
+        currentIndex: 0,
+        selectedItemColor: Colors.amber[800],
+        onTap: (index) {
+          switch (index) {
+            case 0:
+
+              break;
+            case 1:
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                      builder: (context) => Profile(userEmail: widget.userEmail),
+          ),
+              );
+              break;
+            case 2:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SavedStoriesPage(savedStories: savedStories),
+                ),
+              );
+              break;
+          }
+               },
+      ),
     );
   }
 }
@@ -276,7 +314,7 @@ class MyImage extends StatelessWidget {
       child: Image.asset(
         imageUrl,
         width: 150,
-        height: 300,
+        height: 350,
         fit: BoxFit.cover,
       ),
     );
